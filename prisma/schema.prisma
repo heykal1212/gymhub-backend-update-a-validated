@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  staff
+  trainer
+  member
+}
+
+model User {
+  id         String       @id @default(uuid())
+  name       String
+  email      String       @unique
+  role       Role         @default(member)
+  phone      String?
+
+  metrics    BodyMetric[]
+  prs        PR[]
+  plans      MemberPlan[]
+  payments   Payment[]
+  invoices   Invoice[]
+  attendance Attendance[]
+
+  createdAt  DateTime     @default(now())
+}
+
+model MembershipTier {
+  id         String       @id @default(uuid())
+  name       String
+  priceMonth Float
+  benefits   String[]
+  tierLevel  Int
+  createdAt  DateTime     @default(now())
+  plans      MemberPlan[]
+}
+
+model MemberPlan {
+  id            String          @id @default(uuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  membershipId  String
+  membership    MembershipTier  @relation(fields: [membershipId], references: [id])
+  startAt       DateTime
+  endAt         DateTime
+  status        String          @default("active")
+  autoRenew     Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+
+  @@index([userId])
+  @@index([membershipId])
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  method    String
+  amount    Float
+  currency  String   @default("ETB")
+  status    String   @default("paid")
+  timestamp DateTime @default(now())
+  staffId   String?
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  dueAt     DateTime
+  amount    Float
+  reason    String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  deviceId   String
+  checkinAt  DateTime @default(now())
+  checkoutAt DateTime?
+}
+
+model BodyMetric {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  date       DateTime @default(now())
+  weightKg   Float?
+  bodyFatPct Float?
+  chestCm    Float?
+  waistCm    Float?
+  hipCm      Float?
+  neckCm     Float?
+  bicepCm    Float?
+  thighCm    Float?
+}
+
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String
+  muscleGroup String
+  equipment   String?
+  skillLevel  String?
+  mediaUrl    String?
+  tags        String[]
+  prs         PR[]
+}
+
+model PR {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  value      Float
+  unit       String
+  date       DateTime @default(now())
+}
